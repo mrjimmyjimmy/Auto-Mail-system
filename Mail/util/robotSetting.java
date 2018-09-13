@@ -8,6 +8,8 @@ public class robotSetting {
     
     public static int CAREFUL_CAPACITY = 3;
     
+    public static int MAX_FRAGILE_MAIL = 1;
+    
     public static int WEAK_CAPACITY_WEIGHT = 2000;
     
     public static int STANDARD_SPEED = 1;

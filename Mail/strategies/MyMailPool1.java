@@ -2,6 +2,7 @@ package strategies;
 
 import robots.*;
 import util.Clock;
+import util.robotSetting;
 import util.robotSetting.RobotType;
 import mailItems.*;
 import exceptions.*;
@@ -20,9 +21,20 @@ import automail.*;
 
 public class MyMailPool1 implements IMailPool {
 	
+	
+	/**
+	* @DataStructures
+	* Each robot has 2 states,  UNAVAILIABLE means returning and delivering  
+	* States are linked to robot by key and value, Hashmap achieves O(1) data access
+	* Six types of mails are stored in three different stack
+	*/
 	public enum RobotState { WAITING, UNAVAILIABLE }
 	Map<Robot, RobotState> robots = new HashMap<Robot,RobotState>(); 
-	private Stack<MailItem> fragilePool  = new Stack<MailItem>();
+	
+//	fragilePool store all fragile mails
+//	weakPool store mails which weight are under 2000
+//	strongPool store mails which weight are uper 2000
+	private Stack<MailItem> fragilePool  = new Stack<MailItem>(); 
 	private Stack<MailItem> weakPool = new Stack<MailItem>();
 	private Stack<MailItem> strongPool = new Stack<MailItem>();
 		
@@ -36,16 +48,15 @@ public class MyMailPool1 implements IMailPool {
 		if(mailItem.getFragile()) {
 			fragilePool.push(mailItem);
 			}
-		else if (mailItem.getWeight() < 2000) {
-			weakPool.push(mailItem);
-			
-			
-			
+		else if (mailItem.getWeight() < robotSetting.WEAK_CAPACITY_WEIGHT) {
+			weakPool.push(mailItem);	
 		}
 		else {
 			strongPool.push(mailItem);
 
 		}
+		
+//		sort the pool when a new mail is added
 		sortPool(fragilePool);
 		sortPool(strongPool);
 		sortPool(weakPool);
@@ -72,14 +83,21 @@ public class MyMailPool1 implements IMailPool {
 	
 }
 
+	/**
+	 * 
+	 * @param mailItem
+	 * @return the score for the mailitem
+	 */
 
-	private static double getScore(MailItem mailItem) {
-		
-		return Math.pow(Clock.Time() - mailItem.getArrivalTime(),1.2)*(1+Math.sqrt(mailItem.getWeight()));
-		
+	private static double getScore(MailItem mailItem) {	
+		return Math.pow(Clock.Time() - mailItem.getArrivalTime(),1.2)*(1+Math.sqrt(mailItem.getWeight()));	
 	}
 	
-
+	
+	/**
+	* Repeatedly check the available robot by check value of given
+	* If there are available robots 
+	*/
 	@Override
 	public void step() throws FragileItemBrokenException {
 		// TODO Auto-generated method stub
@@ -90,9 +108,14 @@ public class MyMailPool1 implements IMailPool {
 		}
 		
 	}
+	
+	/**
+	 * fill in the tube for the current robot
+	 * contains four methods depending on the type of robots
+	 * @param currRobot
+	 */
 
 	private void fillStorageTube(Robot currRobot) {
-		// TODO Auto-generated method stub
 		RobotType type = currRobot.getRobotType();
 		switch (type) {
 		case Careful:
@@ -113,43 +136,48 @@ public class MyMailPool1 implements IMailPool {
 
 		default:
 			break;
-		}
-		
-		
+		}		
 	}
 
+	
+	/**
+	 * 
+	 * @param carefulRobot
+	 */
 	private void fillCarefulRobots(Robot robot) {
 		// TODO Auto-generated method stub
 		StorageTube tube = robot.getTube();
 		try {
-			while (!fragilePool.isEmpty() && tube.getSize() < 1) {
+			while (!fragilePool.isEmpty() && tube.getSize() < robotSetting.MAX_FRAGILE_MAIL) {
 				tube.addItem(fragilePool.pop());
 			}
-			if (tube.getSize() > 0 ) {
-				
-//				sortTube(tube);
-				robot.dispatch();
-			}
+			startToLeave(robot, tube); 
+
 		} catch (TubeFullException | FragileItemBrokenException e) {
 			e.printStackTrace();
 		}
 	}
+	
+	private void startToLeave(Robot robot, StorageTube tube) {
+		if (tube.getSize() > 0 ) {		
+//			sortTube(tube);
+			robot.dispatch();
+		}
+	}
 
+	
 	private void fillBigRobots(Robot robot) {
 		StorageTube tube = robot.getTube();
 		try {
-			while (!strongPool.isEmpty() && tube.getSize() < 6) {
+			pickStrongpoolMail(robot, tube);
+			while (!strongPool.isEmpty() && tube.getSize() < robotSetting.BIG_CAPACITY) {
 				tube.addItem(strongPool.pop());
 			}
-			while (!weakPool.isEmpty() && tube.getSize() < 4) {
+			while (!weakPool.isEmpty() && tube.getSize() < robotSetting.STANDARD_CAPACITY) {
 				tube.addItem(weakPool.pop());
 			}
 			
-			if (tube.getSize() > 0 ) {
-				
-//				sortTube(tube);
-				robot.dispatch();
-			}
+			startToLeave(robot, tube); 
 		} catch (TubeFullException | FragileItemBrokenException e) {
 			e.printStackTrace();
 		}
@@ -158,40 +186,47 @@ public class MyMailPool1 implements IMailPool {
 
 	private void fillStandardRobots(Robot robot) {
 		StorageTube tube = robot.getTube();
-		try {
-			while (!strongPool.isEmpty() && tube.getSize() < 4) {
-				tube.addItem(strongPool.pop());
-			}
-			while (!weakPool.isEmpty() && tube.getSize() < 4) {
-				tube.addItem(weakPool.pop());
-			}
-			if (tube.getSize() > 0 ) {
-				
-//				sortTube(tube);
-				robot.dispatch();
-			}
-		} catch (TubeFullException | FragileItemBrokenException e) {
-			e.printStackTrace();
-		}
+		pickStrongpoolMail(robot, tube);
+		startToLeave(robot, tube);
 		
 	}
 
-	private void fillWeakRobots(Robot robot) {
-		StorageTube tube = robot.getTube();
-		try {
-			while (!weakPool.isEmpty() && tube.getSize() < 4) {
-				tube.addItem(weakPool.pop());
+	private void pickStrongpoolMail(Robot robot, StorageTube tube) {
+		while (!strongPool.isEmpty() && tube.getSize() < robotSetting.STANDARD_CAPACITY) {
+			try {
+				tube.addItem(strongPool.pop());
+			} catch (TubeFullException | FragileItemBrokenException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-			if (tube.getSize() > 0 ) {
-				
-//				sortTube(tube);
-				robot.dispatch();
-			}
-		} catch (TubeFullException | FragileItemBrokenException e) {
-			e.printStackTrace();
 		}
+		pickWeakpoolMail(robot, tube);
 		
 	}
+
+
+
+
+	private void fillWeakRobots(Robot robot) {
+		StorageTube tube = robot.getTube();
+		pickWeakpoolMail(robot, tube);
+		startToLeave(robot, tube);
+		
+	}
+
+	private void pickWeakpoolMail(Robot robot, StorageTube tube) {
+		while (!weakPool.isEmpty() && tube.getSize() < robotSetting.STANDARD_CAPACITY) {
+				try {
+					tube.addItem(weakPool.pop());
+				} catch (TubeFullException | FragileItemBrokenException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+		}	
+	}
+
+
+
 
 	@Override
 	public void registerWaiting(Robot robot) {
