@@ -6,6 +6,7 @@ import util.robotSetting;
 import util.robotSetting.RobotType;
 import mailItems.*;
 import exceptions.*;
+import automail.*;
 
 import java.awt.print.Printable;
 import java.util.ArrayList;
@@ -17,7 +18,7 @@ import java.util.Stack;
 import com.sun.accessibility.internal.resources.accessibility;
 import com.sun.glass.ui.CommonDialogs.Type;
 
-import automail.*;
+//import automail.*;
 
 public class MyMailPool1 implements IMailPool {
 	
@@ -115,118 +116,99 @@ public class MyMailPool1 implements IMailPool {
 	 * @param currRobot
 	 */
 
-	private void fillStorageTube(Robot currRobot) {
-		RobotType type = currRobot.getRobotType();
-		switch (type) {
-		case Careful:
-			fillCarefulRobots(currRobot);
-			break;
-			
-		case Weak:
-			fillWeakRobots(currRobot);
-			break;
-			
-		case Standard:
-			fillStandardRobots(currRobot);
-			break;
-			
-		case Big:
-			fillBigRobots(currRobot);
-			break;
-
-		default:
-			break;
-		}		
-	}
-
-	
-	/**
-	 * 
-	 * @param carefulRobot
-	 */
-	private void fillCarefulRobots(Robot robot) {
-		// TODO Auto-generated method stub
+	private void fillStorageTube(Robot robot) {
+		RobotType type = robot.getRobotType();
 		StorageTube tube = robot.getTube();
 		try {
-			while (!fragilePool.isEmpty() && tube.getSize() < robotSetting.MAX_FRAGILE_MAIL) {
-				tube.addItem(fragilePool.pop());
-			}
-			startToLeave(robot, tube); 
-
+			pickMailFromPool(robot, tube, type);
 		} catch (TubeFullException | FragileItemBrokenException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	}
+		startToLeave(robot, tube);
+	}		
+
+	
+
 	
 	private void startToLeave(Robot robot, StorageTube tube) {
+		sortTube(tube);
 		if (tube.getSize() > 0 ) {		
-//			sortTube(tube);
 			robot.dispatch();
 		}
 	}
-
 	
-	private void fillBigRobots(Robot robot) {
-		StorageTube tube = robot.getTube();
-		try {
-			pickStrongpoolMail(robot, tube);
-			while (!strongPool.isEmpty() && tube.getSize() < robotSetting.BIG_CAPACITY) {
-				tube.addItem(strongPool.pop());
+	private void pickMailFromPool(Robot robot, StorageTube tube, RobotType type) throws TubeFullException, FragileItemBrokenException {
+		
+		switch (type) {
+		case Careful:
+			int max = robotSetting.MAX_FRAGILE_MAIL;
+			while (!fragilePool.isEmpty() && tube.getSize() < max) {
+					tube.addItem(fragilePool.pop());
 			}
-			while (!weakPool.isEmpty() && tube.getSize() < robotSetting.STANDARD_CAPACITY) {
-				tube.addItem(weakPool.pop());
-			}
+			break;
+		case Big:
+			int max1 = robotSetting.BIG_CAPACITY;
+			pickStrongpoolMail(robot, tube, max1);
+			break;
+		case Standard:
+			int max2 = robotSetting.STANDARD_CAPACITY;
+			pickStrongpoolMail(robot, tube, max2);
+		
+			break;
+		case Weak:
+			pickWeakpoolMail(robot, tube);
 			
-			startToLeave(robot, tube); 
-		} catch (TubeFullException | FragileItemBrokenException e) {
-			e.printStackTrace();
+		default:
+			break;
 		}
+
 		
 	}
 
-	private void fillStandardRobots(Robot robot) {
-		StorageTube tube = robot.getTube();
-		pickStrongpoolMail(robot, tube);
-		startToLeave(robot, tube);
-		
-	}
 
-	private void pickStrongpoolMail(Robot robot, StorageTube tube) {
-		while (!strongPool.isEmpty() && tube.getSize() < robotSetting.STANDARD_CAPACITY) {
-			try {
-				tube.addItem(strongPool.pop());
-			} catch (TubeFullException | FragileItemBrokenException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+	private void pickStrongpoolMail(Robot robot, StorageTube tube, int max) throws TubeFullException, FragileItemBrokenException{
+		while (!strongPool.isEmpty() && tube.getSize() < max) {
+			tube.addItem(strongPool.pop());
 		}
 		pickWeakpoolMail(robot, tube);
-		
 	}
 
-
-
-
-	private void fillWeakRobots(Robot robot) {
-		StorageTube tube = robot.getTube();
-		pickWeakpoolMail(robot, tube);
-		startToLeave(robot, tube);
-		
-	}
-
-	private void pickWeakpoolMail(Robot robot, StorageTube tube) {
+	private void pickWeakpoolMail(Robot robot, StorageTube tube) throws TubeFullException, FragileItemBrokenException{
 		while (!weakPool.isEmpty() && tube.getSize() < robotSetting.STANDARD_CAPACITY) {
+			tube.addItem(weakPool.pop());
+		}
+	}
+
+
+//	this method to sort the mail_items in the tube, according to their destination_floor
+	private void sortTube(StorageTube tube) {
+		Stack<MailItem> help = new Stack<MailItem>();
+		while (!tube.isEmpty()) {
+			MailItem cur = tube.pop();	
+			double curScore = cur.getDestFloor();
+			while (!help.isEmpty() && help.peek().getDestFloor() > curScore) {
+				
 				try {
-					tube.addItem(weakPool.pop());
+					tube.addItem(help.pop());
 				} catch (TubeFullException | FragileItemBrokenException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-		}	
-	}
-
-
-
+			}
+			help.push(cur);
+		}
+		
+		while (!help.isEmpty()) {
+			try {
+				tube.addItem(help.pop());
+			} catch (TubeFullException | FragileItemBrokenException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}		
+	
+}
 
 	@Override
 	public void registerWaiting(Robot robot) {
