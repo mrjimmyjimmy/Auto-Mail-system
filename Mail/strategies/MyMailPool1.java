@@ -42,13 +42,15 @@ public class MyMailPool1 implements IMailPool {
 	
 	
 	@Override
-	
+	/**
+	 * Add a mail to one of the three pools
+	 */
 	public void addToPool(MailItem mailItem) {
 		
-		System.out.println(mailItem.weight);
 		if(mailItem.getFragile()) {
 			fragilePool.push(mailItem);
 			}
+		
 		else if (mailItem.getWeight() < robotSetting.WEAK_CAPACITY_WEIGHT) {
 			weakPool.push(mailItem);	
 		}
@@ -65,7 +67,10 @@ public class MyMailPool1 implements IMailPool {
 	
 	
 	
-	
+	/**
+	 * 
+	 * @param pool
+	 */
 	private void sortPool(Stack<MailItem> stack) {
 		Stack<MailItem> help = new Stack<MailItem>();
 		while (!stack.isEmpty()) {
@@ -157,7 +162,8 @@ public class MyMailPool1 implements IMailPool {
 		
 			break;
 		case Weak:
-			pickWeakpoolMail(robot, tube);
+			int max3 = robotSetting.WEAK_CAPACITY_WEIGHT;
+			pickWeakpoolMail(robot, tube, max3);
 			
 		default:
 			break;
@@ -171,11 +177,11 @@ public class MyMailPool1 implements IMailPool {
 		while (!strongPool.isEmpty() && tube.getSize() < max) {
 			tube.addItem(strongPool.pop());
 		}
-		pickWeakpoolMail(robot, tube);
+		pickWeakpoolMail(robot, tube, max);
 	}
 
-	private void pickWeakpoolMail(Robot robot, StorageTube tube) throws TubeFullException, FragileItemBrokenException{
-		while (!weakPool.isEmpty() && tube.getSize() < robotSetting.STANDARD_CAPACITY) {
+	private void pickWeakpoolMail(Robot robot, StorageTube tube, int max) throws TubeFullException, FragileItemBrokenException{
+		while (!weakPool.isEmpty() && tube.getSize() < max) {
 			tube.addItem(weakPool.pop());
 		}
 	}
