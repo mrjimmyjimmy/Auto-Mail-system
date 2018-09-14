@@ -15,6 +15,8 @@ public class Automail {
     public IMailPool mailPool;
     public IMailDelivery delivery;
     List<RobotType> RobotTypes;
+    public static int robot_number;
+    
     public Automail(IMailPool mailPool, IMailDelivery delivery,List<RobotType> RobotTypes) {
     	// Swap between simple provided strategies and your strategies here
     	    	
@@ -26,6 +28,10 @@ public class Automail {
     	robot = new Robot[this.RobotTypes.size()];
     	init();
     }
+    
+    public int getRobotNumber() {
+		return this.RobotTypes.size();
+	}
     
     public void init() {
     	for(int i = 0 ; i < RobotTypes.size(); i++) {

@@ -13,10 +13,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.Stack;
+import java.util.TreeSet;
+
+import javax.swing.text.html.HTMLDocument.Iterator;
 
 import com.sun.accessibility.internal.resources.accessibility;
 import com.sun.glass.ui.CommonDialogs.Type;
+
+import apple.laf.JRSUIConstants.Size;
 
 //import automail.*;
 
@@ -109,11 +116,19 @@ public class MyMailPool1 implements IMailPool {
 		// TODO Auto-generated method stub
 		for (Robot currRobot : robots.keySet() ) {
 			if(robots.get(currRobot) == RobotState.WAITING) {
+//				checkItemRemainInPool(robots, "fragilePool");
+//				checkItemRemainInPool(robots, "strongPool");
 				fillStorageTube(currRobot);
+				
 			}
 		}
 		
 	}
+	
+//	private void checkItemRemainInPool(Map<Robot, RobotState> robots, String pool) {
+//		
+//		
+//	}
 	
 	/**
 	 * fill in the tube for the current robot
@@ -126,7 +141,7 @@ public class MyMailPool1 implements IMailPool {
 		StorageTube tube = robot.getTube();
 		try {
 			pickMailFromPool(robot, tube, type);
-		} catch (TubeFullException | FragileItemBrokenException e) {
+		} catch (TubeFullException | FragileItemBrokenException  e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

@@ -6,6 +6,8 @@ import exceptions.MailAlreadyDeliveredException;
 import mailItems.MailItem;
 import mailItems.PriorityMailItem;
 import exceptions.FragileItemBrokenException;
+import exceptions.FragileItemCannotDeliver;
+import exceptions.HeavyItemCannotDeliver;
 import strategies.Automail;
 import strategies.IMailPool;
 import util.Building;
@@ -13,6 +15,9 @@ import util.Clock;
 import util.robotSetting.RobotType;
 
 import java.util.stream.Stream;
+
+import com.sun.istack.internal.FragmentContentHandler;
+
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
