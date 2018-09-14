@@ -2,7 +2,8 @@ package robots;
 
 import automail.IMailDelivery;
 import automail.Simulation;
-import util.robotSetting.RobotType;
+import util.RobotSetting;
+import util.RobotSetting.RobotType;
 import exceptions.ItemTooHeavyException;
 import strategies.IMailPool;
 
@@ -15,8 +16,9 @@ public class WeakRobot extends Robot {
 	}
 	
 	public void setConfig() {
-		type = util.robotSetting.RobotType.Weak;
-	    tube = new StorageTube(util.robotSetting.STANDARD_CAPACITY);
+		type = util.RobotSetting.RobotType.Weak;
+	    tube = new StorageTube(util.RobotSetting.STANDARD_CAPACITY);
+	    maxCapacity = RobotSetting.STANDARD_CAPACITY;
 	}
     /**
      * Sets the route for the robot

@@ -5,19 +5,16 @@ import exceptions.ItemTooHeavyException;
 import exceptions.MailAlreadyDeliveredException;
 import mailItems.MailItem;
 import mailItems.PriorityMailItem;
+import robots.RobotTypesRegister;
 import exceptions.FragileItemBrokenException;
-import exceptions.FragileItemCannotDeliver;
-import exceptions.HeavyItemCannotDeliver;
+import exceptions.FragileItemCannotDeliverException;
+import exceptions.HeavyItemCannotDeliverException;
 import strategies.Automail;
 import strategies.IMailPool;
 import util.Building;
 import util.Clock;
-import util.robotSetting.RobotType;
-
+import util.RobotSetting.RobotType;
 import java.util.stream.Stream;
-
-import com.sun.istack.internal.FragmentContentHandler;
-
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,7 +37,7 @@ public class Simulation {
     private static ArrayList<MailItem> MAIL_DELIVERED;
     private static double total_score = 0;
 
-    public static void main(String[] args) throws IOException, InstantiationException, IllegalAccessException, ClassNotFoundException {
+    public static void main(String[] args) throws IOException, InstantiationException, IllegalAccessException, ClassNotFoundException, HeavyItemCannotDeliverException, FragileItemCannotDeliverException {
     	Properties automailProperties = new Properties();
 		// Default properties
     	// automailProperties.setProperty("Robots", "Big,Careful,Standard,Weak");
@@ -64,6 +61,7 @@ public class Simulation {
 		// MailPool
 		String mailPoolName = automailProperties.getProperty("MailPool");
 		IMailPool mailPool = (IMailPool) Class.forName(mailPoolName).newInstance();
+		
 		//Seed
 		String seedProp = automailProperties.getProperty("Seed");
 		// Floors
@@ -102,23 +100,27 @@ public class Simulation {
         }
         Integer seed = seedMap.get(true);
         System.out.printf("Seed: %s%n", seed == null ? "null" : seed.toString());
+        RobotTypesRegister typeResgister = new RobotTypesRegister(robotTypes);
         Automail automail = new Automail(mailPool, new ReportDelivery(), robotTypes);
         MailGenerator mailGenerator = new MailGenerator(MAIL_TO_CREATE, automail.mailPool, seedMap, fragile);
-        
+        mailPool.connectRegister(typeResgister);
         /** Initiate all the mail */
         mailGenerator.generateAllMail();
-//        System.out.println("ooooooo");
-//        System.out.println();
         // PriorityMailItem priority;  // Not used in this version
         while(MAIL_DELIVERED.size() != mailGenerator.MAIL_TO_CREATE) {
         	//System.out.println("-- Step: "+Clock.Time());
-            /* priority = */ mailGenerator.step();
+            /* priority = */ 
+            mailGenerator.step();
             try {
                 automail.mailPool.step();
 				for (int i=0; i<robotTypes.size(); i++) automail.robot[i].step();
 			} catch (ExcessiveDeliveryException|ItemTooHeavyException|FragileItemBrokenException e) {
 				e.printStackTrace();
 				System.out.println("Simulation unable to complete.");
+				System.exit(0);
+			} catch (HeavyItemCannotDeliverException|FragileItemCannotDeliverException e) {
+				e.printStackTrace();
+				System.out.println("Unable to deliever all mails because need a particular robot type to delivery the item, please check automail.properties.");
 				System.exit(0);
 			}
             Clock.Tick();

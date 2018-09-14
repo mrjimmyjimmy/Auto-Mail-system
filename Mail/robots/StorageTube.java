@@ -4,6 +4,7 @@ import exceptions.FragileItemBrokenException;
 import exceptions.TubeFullException;
 import mailItems.MailItem;
 
+import java.util.Iterator;
 import java.util.Stack;
 
 /**
@@ -77,5 +78,15 @@ public class StorageTube {
     public MailItem pop(){
         return tube.pop();
     }
-
+    
+    public boolean isContainFragile() {
+    	Iterator<MailItem> iter = tube.iterator();
+    	while (iter.hasNext()){
+    	    MailItem currMail = iter.next();
+    	    if(currMail.getFragile()) {
+    	    	return true;
+    	    }
+    	}
+    	return false;
+    }
 }

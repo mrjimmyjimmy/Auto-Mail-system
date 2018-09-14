@@ -5,9 +5,10 @@ import java.util.List;
 import automail.IMailDelivery;
 import robots.BigRobot;
 import robots.CarefulRobot;
+import robots.RobotTypesRegister;
 import robots.Robot;
 import robots.WeakRobot;
-import util.robotSetting.RobotType;
+import util.RobotSetting.RobotType;
 
 public class Automail {
 	      
@@ -55,7 +56,6 @@ public class Automail {
     		robot = new BigRobot(delivery, mailPool);
     		break;
     	}
-    	
     	return robot;
     }
 }

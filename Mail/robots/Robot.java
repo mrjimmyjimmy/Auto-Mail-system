@@ -12,7 +12,7 @@ import java.util.TreeMap;
 import automail.IMailDelivery;
 import util.Building;
 import util.Clock;
-import util.robotSetting;;
+import util.RobotSetting;;
 
 /**
  * The robot delivers mail!
@@ -29,10 +29,10 @@ public class Robot {
     protected int destination_floor;
     protected IMailPool mailPool;
     protected boolean receivedDispatch;
-    protected util.robotSetting.RobotType type;
+    public RobotSetting.RobotType type;
     protected MailItem deliveryItem;
     protected int deliveryCounter;
-    
+    protected int maxCapacity;
 
     /**
      * Initiates the robot's location at the start to be at the mailroom
@@ -55,18 +55,22 @@ public class Robot {
     }
     
     public void setConfig() {
-        type = robotSetting.RobotType.Standard;
-        tube = new StorageTube(robotSetting.STANDARD_CAPACITY);
+        type = RobotSetting.RobotType.Standard;
+        maxCapacity = RobotSetting.STANDARD_CAPACITY;
+        tube = new StorageTube(RobotSetting.STANDARD_CAPACITY);
     }
     
     public void dispatch() {
     	receivedDispatch = true;
     }
     
-	public util.robotSetting.RobotType getRobotType() {
+	public RobotSetting.RobotType getRobotType() {
     	return type;
     }
-
+	
+	public int getMaximumCapacity() {
+		return maxCapacity;
+	}
     /**
      * This is called on every time step
      * @throws ExcessiveDeliveryException if robot delivers more than the capacity of the tube without refilling
@@ -105,7 +109,7 @@ public class Robot {
                     /** Delivery complete, report this to the simulator! */
                     delivery.deliver(deliveryItem);
                     deliveryCounter++;
-                    if(deliveryCounter > 4){  // Implies a simulation bug
+                    if(deliveryCounter > maxCapacity){  // Implies a simulation bug
                     	throw new ExcessiveDeliveryException();
                     }
                     /** Check if want to return, i.e. if there are no more items in the tube*/
