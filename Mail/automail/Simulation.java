@@ -27,8 +27,6 @@ import java.util.stream.Collectors;
  * This class simulates the behaviour of AutoMail
  */
 public class Simulation {
-
-
 	
     /** Constant for the mail generator */
     private static int MAIL_TO_CREATE;
@@ -38,25 +36,9 @@ public class Simulation {
     private static double total_score = 0;
 
     public static void main(String[] args) throws IOException, InstantiationException, IllegalAccessException, ClassNotFoundException, HeavyItemCannotDeliverException, FragileItemCannotDeliverException {
-    	Properties automailProperties = new Properties();
-		// Default properties  "Big,Careful,Standard,Weak";
-    	automailProperties.setProperty("Robots", "Standard");
-    	automailProperties.setProperty("MailPool", "strategies.SimpleMailPool");
-    	automailProperties.setProperty("Floors", "10");
-    	automailProperties.setProperty("Fragile", "false");
-    	automailProperties.setProperty("Mail_to_Create", "80");
-    	automailProperties.setProperty("Last_Delivery_Time", "100");
-
-    	// Read properties
-		FileReader inStream = null;
-		try {
-			inStream = new FileReader("automail.properties");
-			automailProperties.load(inStream);
-		} finally {
-			 if (inStream != null) {
-	                inStream.close();
-	            }
-		}
+    	PropertyReader propertyReader = new PropertyReader("automail.properties");
+    	Properties automailProperties = propertyReader.loadInputProperty();
+    	
 		// MailPool
 		String mailPoolName = automailProperties.getProperty("MailPool");
 		IMailPool mailPool = (IMailPool) Class.forName(mailPoolName).newInstance();

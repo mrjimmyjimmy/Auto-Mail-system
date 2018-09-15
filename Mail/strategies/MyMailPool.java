@@ -18,7 +18,7 @@ import java.util.Stack;
  * The strategy following 4 principles:
  * 1. Pick from sorted pool, as the pool is sorted, selection is from top to bottom
  * to make sure the item with higher priority is selected 
- * 2. Careful robot first seeks one fragile mail and then other non-fragile mail
+ * 2. Careful robot first seeks one fragile mail and if there is no fragile mail then it looks for heavy and light pool
  * 3. Standard, Big robot first seek from heavy pool
  * 4. Weak Robot only seek from light pool
 **/
