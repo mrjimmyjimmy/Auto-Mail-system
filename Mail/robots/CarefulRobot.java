@@ -1,10 +1,8 @@
 package robots;
 
 import automail.IMailDelivery;
-import automail.Simulation;
 import exceptions.FragileItemBrokenException;
 import util.RobotSetting;
-import util.RobotSetting.RobotType;
 import strategies.IMailPool;
 
 public class CarefulRobot extends Robot {

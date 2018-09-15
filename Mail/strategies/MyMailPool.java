@@ -1,92 +1,126 @@
 package strategies;
 
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.Queue;
-
-import exceptions.FragileItemBrokenException;
-import exceptions.TubeFullException;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-
-import java.util.*;
-import mailItems.*;
-import strategies.*;
-import util.*;
-import util.RobotSetting.RobotType;
 import robots.*;
+import util.Clock;
+import util.RobotSetting;
+import util.RobotSetting.RobotType;
+import mailItems.*;
+import exceptions.*;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Stack;
 
 /** 
- * @Author : Ziang Chen, The University of Melbourne
- * SWEN 30006 SEM2 - 2018 , PartA - Mailbot Blues
- * This class implements the strategy of selecting the mails from mail pool in order to achieve optimal efficiency for delivery
- * The strategy following 3 principles:
- * 1. Trying making sure the available highest priority first delivered 
- * 2. Avoid thirsty, earliest deliver time has high priority
- * 3. Optimize the mails selections for weak robot 
+ * @Author : Ziang Chen, Zhe Xu, Jiaqi Li, The University of Melbourne
+ * SWEN 30006 SEM2 - 2018 , PartB - Judgment Day
+ * This class implements the strategy of selecting the mails from mail pool
+ * The strategy following 2 principles:
+ * 1. Always pick up the mail with smallest score
+ * 2. Careful robot only pick one fragile mail and no other non-fragile mail
 **/
 
+
 public class MyMailPool implements IMailPool {
-	
 	/**
 	* @DataStructures
 	* Each robot has 2 states,  UNAVAILIABLE means returning and delivering  
 	* States are linked to robot by key and value, Hashmap achieves O(1) data access
-	* Two types of mails are stored in two different list
-	* The lists provide the similar function as priority queue as they will be sorted following the principle
+	* Six types of mails are stored in three different stack
 	*/
 	public enum RobotState { WAITING, UNAVAILIABLE }
 	Map<Robot, RobotState> robots = new HashMap<Robot,RobotState>(); 
-	private List <MailItem> nonPriorityPool = new ArrayList <MailItem>();
-	private List <MailItem> PriorityPool = new ArrayList <MailItem>();
+    private RobotTypesRegister typeRegister = new RobotTypesRegister();
+
+    /**
+     * @DataStructures
+     * 	fragilePool store all fragile mails
+     * 	weakPool store mails which weight are under 2000
+     * 	strongPool store mails which weight are bigger than 2000
+     */
+	private Stack<MailItem> fragilePool  = new Stack<MailItem>(); 
+	private Stack<MailItem> weakPool = new Stack<MailItem>();
+	private Stack<MailItem> strongPool = new Stack<MailItem>();
 	
-	/**
-	* @Principles
-	* The comparator that implements principle 1 and 2
-	* Applied when sorting Lists
-	*/
-	private class priorityComparator implements Comparator<MailItem>{
-		@Override
-		public int compare(MailItem o1, MailItem o2) {
-			if(o1 instanceof PriorityMailItem && o2 instanceof  PriorityMailItem ) {
-				PriorityMailItem po1 = (PriorityMailItem) o1;
-				PriorityMailItem po2 = (PriorityMailItem) o2;
-				if (po2.getPriorityLevel() != po1.getPriorityLevel()) {
-					return po2.getPriorityLevel() - po1.getPriorityLevel();
-				}
-			}
-			return o1.getArrivalTime() - o2.getArrivalTime();			
-		}
+	@Override
+	public void connectRegister(RobotTypesRegister typeRegister) {
+		this.typeRegister = typeRegister;
 	}
 	
-	/**
-	* Add mails to the pool
-	* Sort mails when new mails come in, which implements that high priority and earliest mails can be retrieved first 
-	*/
 	@Override
+	/**
+	 * @param mailItem
+	 * Add a mail to one of the three pools
+	 */
 	public void addToPool(MailItem mailItem) {
-		// TODO Auto-generated method stuba
-		if(mailItem instanceof PriorityMailItem) {
-			PriorityPool.add(mailItem);
-			Collections.sort(PriorityPool, new priorityComparator());
-			
-		}else {
-			nonPriorityPool.add(mailItem);
-			Collections.sort(nonPriorityPool, new priorityComparator());
+		if(mailItem.getFragile()) {
+			fragilePool.push(mailItem);
 		}
+		else if (mailItem.getWeight() < RobotSetting.WEAK_CAPACITY_WEIGHT) {
+			weakPool.push(mailItem);	
+		}
+		else {
+			strongPool.push(mailItem);
+		}
+		
+		//	sort the pool when a new mail is added
+		sortPool(fragilePool);
+		sortPool(strongPool);
+		sortPool(weakPool);
 	}
 	
+	
 	/**
-	* Repeatedly check the available robot by check value of given
-	* If there are available robots 
+	 * Sort the pool, according to their delivery score. 
+	 * Make sure every time the robot will pick up a mail with smallest score.
+	 * @param pool
+	 */
+	private void sortPool(Stack<MailItem> stack) {
+		
+		// create an help_stack to help sorting.
+		Stack<MailItem> help = new Stack<MailItem>();
+		while (!stack.isEmpty()) {
+			
+			//	pop an item from stack and compare its score with the one from the top of the help_stack
+			MailItem cur = stack.pop();	
+			double curScore = getScore(cur);
+			while (!help.isEmpty() && getScore(help.peek()) > curScore) {
+				stack.push(help.pop());
+			}
+			help.push(cur);
+		}		
+		while (!help.isEmpty()) {
+			stack.push(help.pop());
+		}	
+	}
+	
+	
+	/**
+	 * Calculate score of delivering a mail item.
+	 * @param mailItem
+	 * @return the score for the mailItem
+	 */
+	private static double getScore(MailItem mailItem) {	
+		return Math.pow(Clock.Time() - mailItem.getArrivalTime(),1.2)*(1+Math.sqrt(mailItem.getWeight()));	
+	}
+	
+	
+	/**
+	* Repeatedly check the available robot by check value of given.
+	* If there are available robots.
+	* After that, if any robots are waiting, fill the robots with mails.
+	 * @throws FragileItemCannotDeliverException 
+	 * @throws HeavyItemCannotDeliverException 
 	*/
 	@Override
-	public void step() {
+	public void step() throws FragileItemBrokenException, HeavyItemCannotDeliverException, FragileItemCannotDeliverException {
 		// TODO Auto-generated method stub
+		if(waitingRobotNum() == typeRegister.sizeOfRobotList() 
+				&& (weakPool.size() == 0 || fragilePool.size() > 0 
+				&& strongPool.size() == 0 && weakPool.size() == 0)) {
+			checkUnableDeliveryCondition();
+		}
+		
 		for (Robot currRobot : robots.keySet() ) {
 			if(robots.get(currRobot) == RobotState.WAITING) {
 				fillStorageTube(currRobot);
@@ -94,137 +128,187 @@ public class MyMailPool implements IMailPool {
 		}
 	}
 	
+	
 	/**
-	* First select the items, which composed a list
-	* Add item to the Tube 
-	* @param robot
-	*/
+	 * The strong/fragile Pool have items and there are no Standard/Big/Careful robots to delivery these items.
+	 * @throws HeavyItemCannotDeliverException
+	 * @throws FragileItemCannotDeliverException
+	 */
+	private void checkUnableDeliveryCondition() throws HeavyItemCannotDeliverException, FragileItemCannotDeliverException {
+		if(strongPool.size() > 0 && typeRegister.isOnlyWeak()) {
+			throw new HeavyItemCannotDeliverException();
+		}else if(fragilePool.size() > 0 && !typeRegister.isHasCareful()) {
+			throw new FragileItemCannotDeliverException();
+		}
+	}
+	
+	
+	/**
+	 * fill in the tube for the current robot
+	 * @param currRobot
+	 */
 	private void fillStorageTube(Robot robot) {
-		List <MailItem> mailToTube = popFromPool(robot.getRobotType() == RobotType.Standard);
+		RobotType type = robot.getRobotType();
 		StorageTube tube = robot.getTube();
-		for(MailItem mailitem : mailToTube) {
-			try {
+		try {
+			pickMailFromPool(robot, tube, type);
+		} catch (TubeFullException | FragileItemBrokenException  e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		startToLeave(robot, tube);
+	}		
+
+	
+	/**
+	 * After the robot's tube is filled with item, set the path and start to delivery
+	 * @param robot
+	 * @param tube
+	 */
+	private void startToLeave(Robot robot, StorageTube tube) {
+		sortTube(tube);
+		if (tube.getSize() > 0 ) {		
+			robot.dispatch();
+		}
+	}
+	
+	
+	/**
+	 * Fill the robot's tube with mail according to their type.
+	 * @param robot
+	 * @param tube
+	 * @param type
+	 * @throws TubeFullException
+	 * @throws FragileItemBrokenException
+	 */
+	private void pickMailFromPool(Robot robot, StorageTube tube, RobotType type) throws TubeFullException, FragileItemBrokenException {
+		//	the max capability of the robot's tube
+		int max = robot.getMaximumCapacity();
+		switch (type) {
+		case Careful:
+		    pickFragilePoolMail(robot, tube, max);
+			break;
+		case Big:
+			pickStrongpoolMail(robot, tube, max);
+			break;
+		case Standard:
+			pickStrongpoolMail(robot, tube, max);
+			break;
+		case Weak:
+			pickWeakpoolMail(robot, tube, max);
+			break;
+		}
+	}
+
+	/**
+	 * For Strong and Big robots
+	 * First pick up mails from Strong pool
+	 * Then pick up item from Weak pool
+	 * @param robot
+	 * @param tube
+	 * @param max
+	 * @throws TubeFullException
+	 * @throws FragileItemBrokenException
+	 */
+	private void pickStrongpoolMail(Robot robot, StorageTube tube, int max) throws TubeFullException, FragileItemBrokenException{
+		while (!strongPool.isEmpty() && tube.getSize() < max) {
+			tube.addItem(strongPool.pop());
+		}
+		pickWeakpoolMail(robot, tube, max);
+	}
+	
+	
+	/**
+	 * For Careful robot, pick up item from fragile pool
+	 * @param robot
+	 * @param tube
+	 * @param max
+	 * @throws TubeFullException
+	 * @throws FragileItemBrokenException
+	 */
+	private void pickFragilePoolMail(Robot robot, StorageTube tube, int max) throws TubeFullException, FragileItemBrokenException{
+		if(!fragilePool.isEmpty() && !tube.isContainFragile()) {
+			tube.addItem(fragilePool.pop());
+		}else {
+			pickStrongpoolMail(robot, tube, max);
+		}
+	}
+	
+	
+	/**
+	 * For Weak robot, only pick up item from weak pool
+	 * @param robot
+	 * @param tube
+	 * @param max
+	 * @throws TubeFullException
+	 * @throws FragileItemBrokenException
+	 */
+	private void pickWeakpoolMail(Robot robot, StorageTube tube, int max) throws TubeFullException, FragileItemBrokenException{
+		while (!weakPool.isEmpty() && tube.getSize() < max) {
+			tube.addItem(weakPool.pop());
+		}
+	}
+	
+	
+	/**
+	 * this method to sort the mail_items in the tube, according to their destination_floor
+	 * @param tube
+	 */
+	private void sortTube(StorageTube tube) {
+		Stack<MailItem> help = new Stack<MailItem>();
+		while (!tube.isEmpty()) {
+			MailItem cur = tube.pop();	
+			double curScore = cur.getDestFloor();
+			while (!help.isEmpty() && help.peek().getDestFloor() > curScore) {
 				try {
-					tube.addItem(mailitem);
-				} catch (FragileItemBrokenException e) {
+					tube.addItem(help.pop());
+				} catch (TubeFullException | FragileItemBrokenException e) {
 					e.printStackTrace();
 				}
-			} catch (TubeFullException e) {
+			}
+			help.push(cur);
+		}
+		while (!help.isEmpty()) {
+			try {
+				tube.addItem(help.pop());
+			} catch (TubeFullException | FragileItemBrokenException e) {
 				e.printStackTrace();
 			}
-		}
-		robot.dispatch();
-	}
-	
-	/**
-	* This function returns the result to fill the robot storage tube
-	* If the robot is strong and the total number in the pool is no larger than 4, directly pop all of them
-	* Otherwise, first select items from priority mails and check if the number of size is already 4
-	* If it is, put the items into tube
-	* If its not, select items from non-priority mails to fill the rest, re-compose the result with the previous result 
-	* @param isStrong
-	* @return opitmalResult
-	*/
-	public List <MailItem> popFromPool(boolean isStrong){
-		List <MailItem> optimalResult = new ArrayList <MailItem> ();
-	
-		if(nonPriorityPool.size() + PriorityPool.size() <= 4 && isStrong) {
-			optimalResult.addAll(nonPriorityPool);
-			optimalResult.addAll(PriorityPool);
-			nonPriorityPool.clear();
-			PriorityPool.clear();
-			return optimalResult;
-		}
-		// first select from priority mails
-		List <MailItem> priorityMails = selectPriorityMail(isStrong);
-		optimalResult.addAll(priorityMails);
-		if(optimalResult.size() < 4) {
-			optimalResult.clear();
-			// then select from non-priority mails
-			optimalResult.addAll(selectNonePriorityMail(isStrong, priorityMails));
-		}
- 		return optimalResult;
-	}
-	
-	/**
-	* As the pool is sorted, the items at front have more priority
-	* The function selects the items from the front of priority mail pool 
-	* @param isStrong
-	* @return
-	*/
-	public List <MailItem> selectPriorityMail(boolean isStrong){
-		List <MailItem> result = new ArrayList <MailItem> (); 
-		
-		for (MailItem mailitem : PriorityPool) {
-			// There are still rooms if the result size is less than 4, 
-			if(mailitem instanceof PriorityMailItem && result.size() < 4) {
-				// check if the robot is the strong type, if not, check the weight after adding the item 
-				if(isStrong) {
-					result.add(mailitem);
-				// If the total weight is larger than 2000 for a weak robot, pass this item.
-				}else if (mailitem.getWeight() <= 2000){
-					result.add(mailitem);
-				}
-			}
-			if(result.size() == 4) {
-				break;
-			}
-		}
-		// remove the selected items to avoid duplicate delivery
-		PriorityPool.removeAll(result);
-		return result;
-	}
-	
-	/**
-	* Select from the none priority mail pool
-	* Select is from front to end, to make sure the the items that arrives early can be delivered quickly
-	* @param isStrong
-	* @param priorityMails
-	* @return
-	*/
-	public List <MailItem> selectNonePriorityMail(boolean isStrong, List <MailItem> priorityMails){
-		List <MailItem> result = new ArrayList <MailItem> (); 
-		result.addAll(priorityMails);
-		
-		for (MailItem mailitem : nonPriorityPool) {
-			if (result.size() < 4) {
-				if(isStrong) {
-					result.add(mailitem);
-				// If the total weight is larger than 2000 for a weak robot, pass this item.
-				}else if (mailitem.getWeight() <= 2000) {
-					result.add(mailitem);
-				}
-			}
-			if(result.size() == 4) {
-				break;
-			}
-		}
-		nonPriorityPool.removeAll(result);
-		return result;
-	}
+		}		
+    }
 	
 	
 	/**
-	* Select the given robot object and change its state as WAITING
-	* Access time O(1)
-	*/
+	 * Get robots number who are in waiting state
+	 * @return number
+	 */
+	public int waitingRobotNum() {
+		int waitings = 0;
+		for (Robot currRobot : robots.keySet() ) {
+			if(robots.get(currRobot) == RobotState.WAITING) {
+				waitings++;
+			}
+		}
+		return waitings;
+	}
+	
 	@Override
+	/**
+	 * Add waiting robot
+	 */
 	public void registerWaiting(Robot robot) {
+		// TODO Auto-generated method stub
 		robots.put(robot, RobotState.WAITING);
 	}
 
-	/**
-	* Select the given robot object and change its state as UNAVAILIABLE
-	* Access time O(1)
-	*/
 	@Override
+	/**
+	 * Add unavailable robot
+	 */
 	public void deregisterWaiting(Robot robot) {
+		// TODO Auto-generated method stub
 		robots.put(robot, RobotState.UNAVAILIABLE);
 	}
-
-	@Override
-	public void connectRegister(RobotTypesRegister typeRegister) {
-		// TODO Auto-generated method stub
-		
-	}
+	
+	
 }
