@@ -80,7 +80,7 @@ public class MyMailPool implements IMailPool {
 			//	pop an item from stack and compare its score with the one from the top of the helpBuffer_stack
 			MailItem cur = stack.pop();	
 			double curScore = getScore(cur);
-			while (!helpBuffer.isEmpty() && getScore(helpBuffer.peek()) > curScore) {
+			while (!helpBuffer.isEmpty() && getScore(helpBuffer.peek()) < curScore) {
 				stack.push(helpBuffer.pop());
 			}
 			helpBuffer.push(cur);
@@ -95,7 +95,14 @@ public class MyMailPool implements IMailPool {
 	 * @return the score for the mailItem
 	 */
 	private static double getScore(MailItem mailItem) {	
-		return Math.pow(Clock.Time() - mailItem.getArrivalTime(),1.2)*(1+Math.sqrt(mailItem.getWeight()));	
+		// Penalty for longer delivery times
+		final double penalty = 1.2;
+		double priority_weight = 0;
+		// Take (delivery time - arrivalTime)**penalty * (1+sqrt(priority_weight))
+		if(mailItem instanceof PriorityMailItem){
+			priority_weight = ((PriorityMailItem) mailItem).getPriorityLevel();
+		}
+		return Math.pow(Clock.Time() - mailItem.getArrivalTime() + mailItem.getDestFloor(),penalty)*(1+Math.sqrt(priority_weight));	
 	}
 	/**
 	* Repeatedly check the available robot by check value of given.
