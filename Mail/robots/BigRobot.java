@@ -1,14 +1,6 @@
 package robots;
 
 import automail.IMailDelivery;
-import automail.Simulation;
-import exceptions.ExcessiveDeliveryException;
-import exceptions.FragileItemBrokenException;
-import exceptions.ItemTooHeavyException;
-import mailItems.MailItem;
-import robots.Robot.RobotState;
-import util.Building;
-import util.Clock;
 import util.RobotSetting;
 import strategies.IMailPool;
 

@@ -1,9 +1,7 @@
 package robots;
 
 import automail.IMailDelivery;
-import automail.Simulation;
 import util.RobotSetting;
-import util.RobotSetting.RobotType;
 import exceptions.ItemTooHeavyException;
 import strategies.IMailPool;
 

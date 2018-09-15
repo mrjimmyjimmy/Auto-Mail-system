@@ -5,7 +5,6 @@ import java.util.List;
 import automail.IMailDelivery;
 import robots.BigRobot;
 import robots.CarefulRobot;
-import robots.RobotTypesRegister;
 import robots.Robot;
 import robots.WeakRobot;
 import util.RobotSetting.RobotType;
