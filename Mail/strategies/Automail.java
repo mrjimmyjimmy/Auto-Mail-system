@@ -15,11 +15,11 @@ public class Automail {
     public IMailPool mailPool;
     public IMailDelivery delivery;
     List<RobotType> RobotTypes;
-    public static int robot_number;
-    
+    /**
+     * This class acts as a creator to  create the robot according to the given robot
+     */
     public Automail(IMailPool mailPool, IMailDelivery delivery,List<RobotType> RobotTypes) {
     	// Swap between simple provided strategies and your strategies here
-    	    	
     	/** Initialize the MailPool */  	
     	this.mailPool = mailPool;
     	this.delivery = delivery;
@@ -28,17 +28,19 @@ public class Automail {
     	robot = new Robot[this.RobotTypes.size()];
     	init();
     }
-    
-    public int getRobotNumber() {
-		return this.RobotTypes.size();
-	}
-    
+    /**
+     * fill the robot into the robot list
+     */
     public void init() {
     	for(int i = 0 ; i < RobotTypes.size(); i++) {
     		robot[i] = createRobotByType(RobotTypes.get(i));
     	}
     }
-    
+    /**
+     * Create robot by the given type
+     * @param type
+     * @return
+     */
     public Robot createRobotByType(RobotType type) {
     	Robot robot = null;
     	switch(type) {

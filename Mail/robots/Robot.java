@@ -16,6 +16,7 @@ import util.RobotSetting;;
 
 /**
  * The robot delivers mail!
+ * This class implements Standard robot and can be inherited by other classes
  */
 public class Robot {
 
@@ -33,6 +34,7 @@ public class Robot {
     protected MailItem deliveryItem;
     protected int deliveryCounter;
     protected int maxCapacity;
+    protected int speed;
 
     /**
      * Initiates the robot's location at the start to be at the mailroom
@@ -53,21 +55,32 @@ public class Robot {
         this.deliveryCounter = 0;
         setConfig();
     }
-    
+    /**
+     * This is the section to set different attributes to a robot
+     */
     public void setConfig() {
-        type = RobotSetting.RobotType.Standard;
-        maxCapacity = RobotSetting.STANDARD_CAPACITY;
-        tube = new StorageTube(RobotSetting.STANDARD_CAPACITY);
+        this.type = RobotSetting.RobotType.Standard;
+        this.maxCapacity = RobotSetting.STANDARD_CAPACITY;
+        this.tube = new StorageTube(RobotSetting.STANDARD_CAPACITY);
+        this.speed = 1;
     }
     
     public void dispatch() {
     	receivedDispatch = true;
     }
     
+    /**
+     * get the robot type
+     * @return
+     */
 	public RobotSetting.RobotType getRobotType() {
     	return type;
     }
 	
+	/**
+	 * get the maximum capacity of this robot
+	 * @return
+	 */
 	public int getMaximumCapacity() {
 		return maxCapacity;
 	}
@@ -146,10 +159,10 @@ public class Robot {
     protected void moveTowards(int destination) throws FragileItemBrokenException {
         if (deliveryItem != null && deliveryItem.getFragile() || !tube.isEmpty() && tube.peek().getFragile()) throw new FragileItemBrokenException();
         if(current_floor < destination){
-            current_floor = current_floor + 1;
+            current_floor = current_floor + speed;
         }
         else{
-            current_floor = current_floor - 1;
+            current_floor = current_floor - speed;
         }
     }
     

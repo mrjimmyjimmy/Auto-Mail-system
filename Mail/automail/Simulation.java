@@ -39,8 +39,7 @@ public class Simulation {
 
     public static void main(String[] args) throws IOException, InstantiationException, IllegalAccessException, ClassNotFoundException, HeavyItemCannotDeliverException, FragileItemCannotDeliverException {
     	Properties automailProperties = new Properties();
-		// Default properties
-    	// automailProperties.setProperty("Robots", "Big,Careful,Standard,Weak");
+		// Default properties  "Big,Careful,Standard,Weak";
     	automailProperties.setProperty("Robots", "Standard");
     	automailProperties.setProperty("MailPool", "strategies.SimpleMailPool");
     	automailProperties.setProperty("Floors", "10");
@@ -82,7 +81,6 @@ public class Simulation {
 		System.out.print("Robots: "); System.out.println(robotTypes);
 
 		// End properties
-		
         MAIL_DELIVERED = new ArrayList<MailItem>();
                 
         /** Used to see whether a seed is initialized or not */
