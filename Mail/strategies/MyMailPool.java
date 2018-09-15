@@ -17,7 +17,7 @@ import java.util.*;
 import mailItems.*;
 import strategies.*;
 import util.*;
-import util.robotSetting.RobotType;
+import util.RobotSetting.RobotType;
 import robots.*;
 
 /** 
@@ -100,7 +100,6 @@ public class MyMailPool implements IMailPool {
 	* @param robot
 	*/
 	private void fillStorageTube(Robot robot) {
-		
 		List <MailItem> mailToTube = popFromPool(robot.getRobotType() == RobotType.Standard);
 		StorageTube tube = robot.getTube();
 		for(MailItem mailitem : mailToTube) {
@@ -203,6 +202,8 @@ public class MyMailPool implements IMailPool {
 		nonPriorityPool.removeAll(result);
 		return result;
 	}
+	
+	
 	/**
 	* Select the given robot object and change its state as WAITING
 	* Access time O(1)
@@ -219,5 +220,11 @@ public class MyMailPool implements IMailPool {
 	@Override
 	public void deregisterWaiting(Robot robot) {
 		robots.put(robot, RobotState.UNAVAILIABLE);
+	}
+
+	@Override
+	public void connectRegister(RobotTypesRegister typeRegister) {
+		// TODO Auto-generated method stub
+		
 	}
 }

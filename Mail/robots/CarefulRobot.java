@@ -3,7 +3,8 @@ package robots;
 import automail.IMailDelivery;
 import automail.Simulation;
 import exceptions.FragileItemBrokenException;
-import util.robotSetting.RobotType;
+import util.RobotSetting;
+import util.RobotSetting.RobotType;
 import strategies.IMailPool;
 
 public class CarefulRobot extends Robot {
@@ -15,8 +16,9 @@ public class CarefulRobot extends Robot {
 	}
 	
 	public void setConfig() {
-		type = util.robotSetting.RobotType.Careful;
-		tube = new StorageTube(util.robotSetting.CAREFUL_CAPACITY);
+		type = util.RobotSetting.RobotType.Careful;
+		tube = new StorageTube(util.RobotSetting.CAREFUL_CAPACITY);
+		maxCapacity = RobotSetting.CAREFUL_CAPACITY;
 	}
 	
 	protected void moveTowards(int destination) throws FragileItemBrokenException {
@@ -29,6 +31,6 @@ public class CarefulRobot extends Robot {
 	          current_floor = current_floor - 1;
 			}
 			step = 0;
-                 }
+          }
 	   }
 }
