@@ -1,7 +1,7 @@
 package exceptions;
 
 /**
- * An exception thrown when all robot unable to fragile item
+ * An exception thrown when all robot unable to deliver fragile item
  */
 
 public class FragileItemCannotDeliverException extends Throwable {
