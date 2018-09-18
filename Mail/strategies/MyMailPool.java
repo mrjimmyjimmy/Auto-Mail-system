@@ -118,7 +118,8 @@ public class MyMailPool implements IMailPool {
 		if(waitingRobotNum() == typeRegister.sizeOfRobotList() 
 				&& (lightPool.size() == 0 || fragilePool.size() > 0 
 				&& heavyPool.size() == 0 && lightPool.size() == 0)) {
-			checkUnableDeliveryCondition();
+			  //Intent Design : check unable delivery condition
+			  //By calling checkUnableDeliveryCondition(), it can check 
 		}
 		
 		for (Robot currRobot : robots.keySet() ) {
